@@ -1,0 +1,297 @@
+---
+title: "Cálculo de Probabilidades en IMDb"
+author: "Enrique Díaz Ocampo"
+date: "`r Sys.Date()`"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
+```
+
+# 11️⃣ Introducción
+
+Este análisis tiene como objetivo calcular probabilidades condicionales en el dataset de IMDb, respondiendo preguntas como:
+
+- ¿Cuál es la probabilidad de que una película con alto presupuesto tenga una alta recaudación?
+
+- ¿Cómo influye el género de la película en su calificación (score)?
+
+- ¿Qué tan probable es que una película de cierto país tenga un presupuesto alto?
+
+Estos cálculos permiten entender patrones en la industria del cine y su relación con el presupuesto, la recaudación y las calificaciones.
+
+# 2️⃣ Carga de Librerías y Configuración
+
+```{r}
+install.packages("here",dependencies = TRUE)
+library(here)           # Manejo de rutas dinámicas
+source(here("reportes/Proy_Imdb/00_CONFIGURACION.r"))
+```
+
+```{r}
+# 📌 Cargar librerías necesarias
+library(janitor)        # Limpieza de nombres de columnas
+library(summarytools)   # Resumen estadístico detallado
+library(ggplot2)        # Gráficos
+library(dplyr)          # Manipulación de datos
+library(plotly)         # Gráficos Interactivos
+
+# 📌 Configuración de gráficos globales
+theme_set(theme_minimal())
+
+# 📌 Cargar scripts de preprocesamiento
+source(here("scripts/utils.r"))
+source(here("scripts/1_preprocesamiento_esp_dataset.r"))
+source(here("scripts/3_analisis_probabilidad.r"))
+
+```
+
+
+# 3️⃣ Carga y Preprocesamiento de Datos
+
+📌 ¿Qué hace esta función?
+
+✔ Limpia los nombres de las columnas.
+
+✔ Convierte variables categóricas en factores.
+
+✔ Filtra valores inválidos.
+
+✔ Retorna un dataset listo para análisis.
+
+```{r}
+# 📌 Cargar y preprocesar el dataset IMDb
+imdb_data <- preprocesar_datos(here("datasets/imdb_data_limpio.csv"), "Imdb")
+
+# Filtrar géneros con más de 50 películas
+imdb_filtered <- imdb_data %>%
+  group_by(genre) %>%
+  filter(n() > 50) %>%
+  ungroup()
+
+```
+
+
+# 4️⃣ Cálculo de Probabilidades Condicionales
+
+En esta sección analizamos la relación entre presupuesto, recaudación, género y calificación de películas aplicando cálculos de probabilidad condicional.
+
+📌 Probabilidad de que una película con alto presupuesto tenga alta recaudación
+
+```{r}
+# 📌 Definir los bins para cada variable
+bins_budget <- seq(0, max(imdb_filtered$budget_x, na.rm = TRUE), by = 50000000)  # Intervalos de $50M
+bins_revenue <- seq(0, max(imdb_filtered$revenue, na.rm = TRUE), by = 100000000)  # Intervalos de $100M
+
+# 📌 Transformar los datos antes de calcular probabilidades
+imdb_data_binned <- imdb_filtered %>%
+  filter(budget_x > 0, revenue > 0) %>%  # Eliminamos valores nulos
+  mutate(
+    budget_x = cut(budget_x, breaks = bins_budget, include.lowest = TRUE),
+    revenue = cut(revenue, breaks = bins_revenue, include.lowest = TRUE)
+  )
+
+# 📌 Calcular la probabilidad condicional de recaudación dado el presupuesto
+resultados_budget_vs_revenue <- calcular_probabilidades(
+  data = imdb_data_binned,
+  condicionante = "budget_x",
+  objetivo = "revenue"
+)
+
+# 📌 Mostrar resultados
+cat("Tabla de contingencia:\n")
+print(resultados_budget_vs_revenue$tabla_contingencia)
+
+cat("\nProbabilidades condicionales:\n")
+print(resultados_budget_vs_revenue$probabilidades_condicionales)
+
+cat("\nProbabilidades marginales de recaudación:\n")
+print(resultados_budget_vs_revenue$probabilidades_marginales)
+
+```
+
+## 📌 Probabilidad de que una película de cierto género tenga calificación alta
+
+```{r}
+# Calcular probabilidades
+resultados_genre_vs_score <- calcular_probabilidades(
+  data = imdb_filtered,
+  condicionante = "genre",
+  objetivo = "score",
+  bins = 10  # Dividimos la calificación en 5 grupos
+)
+
+# 📌 Mostrar resultados
+cat("Tabla de contingencia:\n")
+print(resultados_genre_vs_score$tabla_contingencia)
+
+cat("\nProbabilidades condicionales:\n")
+print(resultados_genre_vs_score$probabilidades_condicionales)
+
+cat("\nProbabilidades marginales de score:\n")
+print(resultados_genre_vs_score$probabilidades_marginales)
+
+```
+
+
+
+## 📌 Probabilidad de que una película de cierto país tenga un alto presupuesto
+
+```{r}
+# Filtrar los 5 países con más películas en la base de datos
+top_countries <- imdb_filtered %>%
+  count(country, sort = TRUE) %>%
+  top_n(5) %>%
+  pull(country)
+
+# Filtrar dataset con los países seleccionados
+imdb_filtered_country <- imdb_filtered %>%
+  filter(country %in% top_countries)
+
+# Calcular probabilidades
+resultados_country_vs_budget <- calcular_probabilidades(
+  data = imdb_filtered_country,
+  condicionante = "country",
+  objetivo = "budget_x",
+  bins = 5
+)
+
+# 📌 Mostrar resultados
+cat("Tabla de contingencia:\n")
+print(resultados_country_vs_budget$tabla_contingencia)
+
+cat("\nProbabilidades condicionales:\n")
+print(resultados_country_vs_budget$probabilidades_condicionales)
+
+cat("\nProbabilidades marginales de presupuesto:\n")
+print(resultados_country_vs_budget$probabilidades_marginales)
+
+```
+
+
+
+## 📊 Visualización de Resultados
+
+### 📊  Probabilidad de Recaudación según Presupuesto
+
+```{r}
+p_budget_vs_revenue <- visualizar_probabilidad_condicional(
+  data = imdb_data_binned,
+  condicionante = "budget_x",
+  objetivo = "revenue",
+  titulo = "Probabilidad de Recaudación según Presupuesto en IMDb",
+  xlab = "Presupuesto (USD)",
+  guardar = TRUE,
+  ruta_guardado = here("reportes/Proy_Imdb/resultados_generados/probabilidad_condicional_budget_vs_revenue.png"),
+  bins = bins_budget
+) 
+
+p_budget_vs_revenue <- p_budget_vs_revenue %>% 
+  layout(xaxis = list(tickangle = 90))  # Rotar etiquetas del eje X a 90 grados
+
+# Mostrar el gráfico con etiquetas rotadas
+p_budget_vs_revenue
+
+
+```
+
+
+### 📊 Probabilidad de Género según Calificación
+
+```{r}
+# Filtrar géneros con al menos 50 películas
+filtered_genres <- imdb_filtered %>%
+  group_by(genre) %>%
+  filter(n() > 250) %>%
+  ungroup()
+
+# Generar el gráfico con los géneros filtrados
+p_genre_vs_score <- visualizar_probabilidad_condicional(
+  data = filtered_genres,
+  condicionante = "genre",
+  objetivo = "score",
+  titulo = "Probabilidad de Género según Calificación en IMDb",
+  xlab = "Género",
+  guardar = TRUE,
+  ruta_guardado = here("reportes/Proy_Imdb/resultados_generados/probabilidad_condicional_genre_vs_score.png"),
+  bins=10
+) %>% layout(xaxis = list(tickangle = 90))  # Aplicar la rotación
+
+# Mostrar el gráfico corregido
+p_genre_vs_score
+
+
+```
+
+
+
+
+### 📊 Probabilidad de Presupuesto según País
+
+```{r}
+p_country_vs_budget <- visualizar_probabilidad_condicional(
+  data = imdb_filtered_country,
+  condicionante = "country",
+  objetivo = "budget_x",
+  titulo = "Probabilidad de Presupuesto según País en IMDb",
+  xlab = "País",
+  guardar = TRUE,
+  ruta_guardado = here("reportes/Proy_Imdb/resultados_generados/probabilidad_condicional_country_vs_budget.png"),
+  bins=10
+)
+
+p_country_vs_budget
+
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

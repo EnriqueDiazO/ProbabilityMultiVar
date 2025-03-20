@@ -1,0 +1,321 @@
+---
+title: "Guía de Gráficos para el Análisis Exploratorio de Datos (EDA)"
+author: "Enrique Díaz Ocampo"
+date: "`r Sys.Date()`"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
+```
+
+
+# 1️⃣ Introducción
+
+Esta guía proporciona una serie de gráficos para realizar un Análisis Exploratorio de Datos (EDA) en diferentes niveles:
+
+- Análisis Unidimensional: Distribución de una sola variable.
+
+- Análisis Multivariado: Relación entre dos o más variables.
+
+- Visualización con ggplot2 para explorar patrones en los datos.
+
+Esta guía te ayudará a seleccionar el gráfico más adecuado según el tipo de variable analizada en el contexto de listings de Airbnb, analizando la distribución de precios, tipos de alojamiento, ubicación y disponibilidad.
+
+# 2️⃣ Carga de Librerías y Configuración
+```{r}
+install.packages("here",dependencies = TRUE)
+library(here)           # Manejo de rutas dinámicas
+source(here("reportes/Proy_Education_Career_Success/00_CONFIGURACION.r"))
+```
+
+```{r}
+#  Cargar librerías necesarias
+library(janitor)        # Limpieza de nombres de columnas
+library(summarytools)   # Resumen estadístico detallado
+library(ggplot2)        # Gráficos
+library(dplyr)          # Manipulación de datos
+library(plotly)         # Gráficos Interactivos
+library(htmlwidgets)
+# Configuración de gráficos globales
+theme_set(theme_minimal())
+
+# Cargar scripts de preprocesamiento
+source(here("scripts/utils.r"))
+source(here("scripts/1_preprocesamiento_esp_dataset.r"))
+source(here("scripts/2_analisis_gráfico.r"))
+
+```
+
+
+# 3️⃣ Carga y Preprocesamiento de Datos
+
+📌 ¿Qué hace esta función?
+
+✔ Limpia los nombres de las columnas.
+
+✔ Convierte variables categóricas en factores.
+
+✔ Filtra valores inválidos.
+
+✔ Retorna un dataset listo para análisis.
+
+```{r}
+# 📌 Cargar y preprocesar el dataset
+airbnb_data <- preprocesar_datos(here("datasets/listings_filtered.csv"), "Airbnb")
+```
+
+# 4️⃣ Análisis Unidimensional
+
+El análisis unidimensional permite estudiar la distribución de una sola variable.
+
+## 📌 Boxplot para una variable cuantitativa (Precio)
+
+```{r}
+p_boxplot_precio <- crear_boxplot(
+  data = airbnb_data,
+  y = "price",
+  title = "Distribución de Precios en Airbnb",
+  xlab = "Alojamientos",
+  ylab = "Precio (USD)",
+  fill = NULL,
+  colores = "blue"
+) +
+  scale_y_log10()  # Aplicar escala logarítmica al eje Y
+
+# Guardar y mostrar el gráfico
+guardar_grafico(p_boxplot_precio, here("reportes/Proy_Airbnb/resultados_generados/boxplot_precio.png"))
+convertir_interactivo(p_boxplot_precio)
+
+```
+
+
+## 📌 Histograma para una variable cuantitativa (Número de Noches Mínimas)
+
+```{r}
+max_nights = 60 # Máximo número de noches
+p_histograma_min_nights <- crear_histograma(
+  data = airbnb_data %>% filter(minimum_nights < max_nights),  # Filtramos valores extremos
+  x = "minimum_nights",
+  title = "Distribución de Noches Mínimas en Airbnb",
+  xlab = "Noches Mínimas",
+  ylab = "Frecuencia",
+  binwidth = 1,  # Usamos bins más pequeños para mejor resolución
+  colores = "lightblue",
+  densidad = FALSE  # Quitamos la línea de densidad
+) + 
+  scale_x_continuous(breaks = seq(0, max_nights, 3))  # Agregamos más etiquetas en el eje X
+
+# Guardar el gráfico
+guardar_grafico(p_histograma_min_nights, here("reportes/Proy_Airbnb/resultados_generados/histograma_minimum_nights.png"))
+
+# Convertir a gráfico interactivo
+convertir_interactivo(p_histograma_min_nights)
+
+
+```
+
+
+# 📌  Comparación de Histogramas de Precio por Tipo de Propiedad 
+```{r}
+# Definir colores y etiquetas para la leyenda
+colores_property_type <- c("Entire home/apt" = "blue", "Private room" = "red", "Shared room" = "cyan", "Hotel room" = "purple")
+etiquetas_leyenda <- c("Casa/Apartamento Entero", "Habitación Privada", "Habitación Compartida", "Hotel")
+
+barrios_seleccionados <- c("Cuauhtémoc")  # 🔹 Cambia esto al barrio que quieras analizar
+
+#Álvaro Obregón           Azcapotzalco          Benito Juárez               Coyoacán  Cuajimalpa de Morelos 
+#Cuauhtémoc      Gustavo A. Madero              Iztacalco             Iztapalapa La Magdalena Contreras 
+#Miguel Hidalgo             Milpa Alta                Tláhuac                Tlalpan    Venustiano Carranza 
+#Xochimilco 
+
+# Crear histograma superpuesto
+
+p_price_histogram <- crear_histograma_filtrado(
+  data = airbnb_data %>% filter(price > 0, price < 1000, neighbourhood_cleansed %in% barrios_seleccionados) ,
+  filtro_columna = "room_type",
+  filtro_valor = c("Private room","Entire home/apt"),
+  x = "price",
+  fill = "room_type",
+  title = "Distribución de Precios según Tipo de Habitación " ,
+  xlab = "Precio",
+  ylab = "Frecuencia",
+  binwidth = 50,
+  colores = colores_property_type,
+  etiquetas_leyenda = etiquetas_leyenda
+)
+
+# Guardar el gráfico
+guardar_grafico(p_price_histogram, here("reportes/Proy_Airbnb/resultados_generados/histograma_price_room_type.png"))
+
+# Convertir a gráfico interactivo
+convertir_interactivo(p_price_histogram)
+
+```
+
+
+
+📌 Barplot para una variable cualitativa (Tipo de Propiedad)
+
+```{r}
+# Ajustar tamaño del gráfico y mejorar etiquetas
+p_barplot_property <- crear_barplot(
+  data = airbnb_data %>% filter(price > 0, price < 1000, neighbourhood_cleansed %in% barrios_seleccionados),
+  x = "property_type",
+  fill = "property_type",
+  title = "Tipos de Propiedad en Airbnb",
+  xlab = "Tipo de Propiedad",
+  ylab = "Frecuencia",
+  dodge = FALSE,
+  voltear = TRUE,
+  legend_position = "none"
+) +
+  theme(
+    plot.title = element_text(hjust = 0.5, size = 18, face = "bold"),  # Agrandar título
+    axis.title = element_text(size = 16, face = "bold"),  # Agrandar etiquetas de los ejes
+    axis.text.x = element_text(size = 14),  # Agrandar números del eje X
+    axis.text.y = element_text(size = 12, hjust = 1)  # Agrandar etiquetas del eje Y y alinearlas
+  )
+
+# Guardar el gráfico con mayor tamaño
+ggsave(here("reportes/Proy_Airbnb/resultados_generados/barplot_property_type.png"),
+       plot = p_barplot_property, width = 12, height = 8, bg = "white")  # 📌 Aumenta tamaño de la imagen
+
+# Convertir a gráfico interactivo
+convertir_interactivo(p_barplot_property)
+
+```
+
+
+# 5️⃣ Análisis Multivariado
+
+El análisis multivariado permite explorar relaciones entre dos o más variables.
+
+📌 Cualitativa vs Cualitativa (Distribución de Tipos de Habitación por Región)
+
+```{r}
+barrios_seleccionados <- c("Cuauhtémoc","Álvaro Obregón","Azcapotzalco")  # 🔹 Cambia esto al barrio que quieras analizar
+
+p_region_room_type <- crear_barplot(
+  data =  airbnb_data %>% filter(price > 0, price < 1000, neighbourhood_cleansed %in% barrios_seleccionados),
+  x = "neighbourhood_cleansed",
+  fill = "room_type",
+  title = "Distribución de Tipos de Habitación por Región",
+  xlab = "Región",
+  ylab = "Frecuencia",
+  dodge = TRUE,
+  voltear = FALSE,
+  legend_position = "right"
+)
+
+# Guardar el gráfico
+guardar_grafico(p_region_room_type, here("reportes/Proy_Airbnb/resultados_generados/barplot_region_room_type.png"))
+
+# Convertir a gráfico interactivo
+convertir_interactivo(p_region_room_type)
+
+```
+
+# 📌 Cuantitativa vs Cualitativa (Boxplot de Precio por Tipo de Propiedad)
+
+```{r}
+barrios_seleccionados <- c("Cuauhtémoc","Álvaro Obregón","Azcapotzalco")  # 🔹 Cambia esto al barrio que quieras analizar
+
+p_boxplot_price_property <- crear_boxplot(
+  data = airbnb_data %>% filter(price > 0, price < 1000, neighbourhood_cleansed %in% barrios_seleccionados),
+  x = "property_type",
+  y = "price",
+  fill = "property_type",
+  title = "Distribución de Precios por Tipo de Propiedad en Airbnb",
+  xlab = "Tipo de Propiedad",
+  ylab = "Precio (USD)",
+  fill_lab = "Tipo de Propiedad",
+  colores = NULL,
+  rotar_x = TRUE
+) +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1, size = 8), legend.position = "none")
+
+# Guardar el gráfico
+guardar_grafico(p_boxplot_price_property, here("reportes/Proy_Airbnb/resultados_generados/boxplot_price_property.png"))
+
+# Convertir a gráfico interactivo
+convertir_interactivo(p_boxplot_price_property)
+
+```
+
+
+## 📌 Cuantitativa vs Cualitativa (Boxplot de Precio por Tipo de Propiedad)
+
+```{r}
+# Seleccionar barrios específicos
+barrios_seleccionados <- c("Cuauhtémoc", "Álvaro Obregón", "Azcapotzalco")  
+
+# Definir colores personalizados para cada tipo de habitación
+colores_room_type <- c("Entire home/apt" = "#2980B9", "Private room" = "#E74C3C", 
+                       "Shared room" = "#27AE60", "Hotel room" = "#8E44AD")
+
+# Filtrar datos según la restricción y contar registros por tipo de propiedad
+filtered_data <- airbnb_data %>%
+  filter(price > 0, price < 1000, neighbourhood_cleansed %in% barrios_seleccionados) %>%
+  group_by(property_type) %>%
+  filter(n() >= 10) %>%  # 🔹 Solo incluir property_type con al menos 10 registros
+  ungroup()
+
+# Crear el gráfico interactivo
+p_boxplot_precio <- crear_boxplot_interactivo(
+  data = filtered_data,
+  x = "property_type",  # Variable para el eje X
+  y = "price",  # Variable para el eje Y
+  color = "room_type",  # Variable para el color (tipo de habitación)
+  colores = colores_room_type,  # Colores personalizados
+  title = "Distribución de Precios por Tipo de Propiedad en Airbnb",  # Título del gráfico
+  xlab = "Tipo de Propiedad",  # Etiqueta del eje X (se puede ajustar)
+  ylab = "Precio",  # Etiqueta del eje Y
+  tickangle = -90  # 🔹 Rotar etiquetas del eje X (opcional)
+) %>%
+  layout(
+    xaxis = list(
+      categoryorder = "total descending",  # Ordenar por cantidad de registros
+      showticklabels = TRUE  # 🔹 Mostrar solo las etiquetas que cumplen la condición
+    )
+  )
+
+# Mostrar el gráfico interactivo
+p_boxplot_precio
+
+
+```
+
+# 📌 Cuantitativa vs Cuantitativa (Diagrama de Dispersión de Precio vs Disponibilidad)
+
+```{r}
+# Filtrar datos con barrios seleccionados y precios válidos
+filtered_data <- airbnb_data %>%
+  filter(price > 0, price < 3000, neighbourhood_cleansed %in% barrios_seleccionados)
+
+# Crear gráfico de dispersión con la función
+p_scatter_price_bathrooms <- crear_scatterplot(
+  data = filtered_data,
+  x = "bathrooms",
+  y = "price",
+  title = "Relación entre Número de Baños y Precio en Airbnb",
+  xlab = "Número de Baños",
+  ylab = "Precio (USD)",
+  color = NULL,
+  colores = "steelblue"
+) +
+  scale_x_continuous(breaks = sort(unique(airbnb_data$bathrooms))) +  # Mostrar todos los valores de bathrooms
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1)  # Rotar etiquetas para mayor claridad
+  )
+
+# Guardar el gráfico
+guardar_grafico(p_scatter_price_bathrooms, here("reportes/Proy_Airbnb/resultados_generados/scatter_price_bathrooms.png"))
+
+# Convertir a gráfico interactivo
+convertir_interactivo(p_scatter_price_bathrooms)
+
+
+```

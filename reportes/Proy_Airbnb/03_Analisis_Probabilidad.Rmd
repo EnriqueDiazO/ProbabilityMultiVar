@@ -1,0 +1,200 @@
+---
+title: "Cálculo de Probabilidades en Airbnb"
+author: "Enrique Díaz Ocampo"
+date: "`r Sys.Date()`"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
+```
+
+# 1️⃣ Introducción
+
+Este análisis tiene como objetivo calcular probabilidades condicionales en el dataset de Airbnb, respondiendo preguntas como:
+
+- ¿Cuál es la probabilidad de que un alojamiento tenga un precio accesible (<$100 USD) en ciertos barrios?
+
+- ¿Cómo influye el tipo de habitación en la disponibilidad del alojamiento?
+
+- ¿Qué tan probable es que un alojamiento tenga más de 3 baños si su precio es alto?
+
+Estos cálculos son clave para entender patrones de precios y disponibilidad en distintos barrios de la ciudad.
+
+# 2️⃣ Carga de Librerías y Configuración
+
+```{r}
+install.packages("here",dependencies = TRUE)
+library(here)           # Manejo de rutas dinámicas
+source(here("reportes/Proy_Airbnb/00_CONFIGURACION.r"))
+```
+
+```{r}
+# 📌 Cargar librerías necesarias
+library(janitor)        # Limpieza de nombres de columnas
+library(summarytools)   # Resumen estadístico detallado
+library(ggplot2)        # Gráficos
+library(dplyr)          # Manipulación de datos
+library(plotly)         # Gráficos Interactivos
+
+# 📌 Configuración de gráficos globales
+theme_set(theme_minimal())
+
+# 📌 Cargar scripts de preprocesamiento
+source(here("scripts/utils.r"))
+source(here("scripts/1_preprocesamiento_esp_dataset.r"))
+source(here("scripts/3_analisis_probabilidad.r"))
+
+```
+
+
+
+```{r}
+# 📌 Cargar dataset limpio
+airbnb_data <- preprocesar_datos(here("datasets/listings_filtered.csv"), "Airbnb")
+
+```
+
+
+# 3️⃣ Cálculo de Probabilidades Condicionales
+
+En esta sección analizamos la relación entre tipo de alojamiento, precios y disponibilidad, aplicando cálculos de probabilidad condicional.
+
+📌 Probabilidad de que un alojamiento tenga un precio accesible (<1000) en barrios seleccionados
+
+```{r}
+barrios_seleccionados <- c("Cuauhtémoc","Álvaro Obregón","Azcapotzalco") 
+
+# Calcular probabilidades
+resultados_precio_barrio <- calcular_probabilidades(
+  data = airbnb_data %>% filter(neighbourhood_cleansed %in% barrios_seleccionados),
+  condicionante = "neighbourhood_cleansed",
+  objetivo = "price",
+  bins = 5  # Dividir el precio en intervalos
+)
+
+# Mostrar resultados
+cat("Tabla de contingencia:\n")
+print(resultados_precio_barrio$tabla_contingencia)
+
+cat("\nProbabilidades condicionales:\n")
+print(resultados_precio_barrio$probabilidades_condicionales)
+
+cat("\nProbabilidades marginales de precio:\n")
+print(resultados_precio_barrio$probabilidades_marginales)
+
+```
+
+
+
+# 📌 Probabilidad de que un alojamiento tenga más de 3 baños dado que su precio es alto .
+
+```{r}
+# 📌 Definir los bins para cada variable
+bins_price <- seq(0, max(airbnb_data$price, na.rm = TRUE), by = 100)  # Intervalos de 100 USD
+bins_bathrooms <- seq(0, max(airbnb_data$bathrooms, na.rm = TRUE), by = 0.5)  # Intervalos de 0.5 baños
+
+# 📌 Transformar los datos antes de calcular probabilidades
+airbnb_data_binned <- airbnb_data %>%
+  filter(price > 0, price < 1000,neighbourhood_cleansed %in% barrios_seleccionados) %>%  # Filtrando valores extremos
+  mutate(
+    price = cut(price, breaks = bins_price, include.lowest = TRUE),  # Convertir en categorías
+    bathrooms = cut(bathrooms, breaks = bins_bathrooms, include.lowest = TRUE)  # Convertir en categorías
+  )
+
+# 📌 Calcular la probabilidad condicional de baños dado el precio
+resultados_bathrooms_vs_price <- calcular_probabilidades(
+  data = airbnb_data_binned,  # Dataset con variables discretizadas
+  condicionante = "price",  # Precio del alojamiento
+  objetivo = "bathrooms"  # Número de baños
+)
+
+# 📌 Mostrar resultados corregidos
+cat("Tabla de contingencia:\n")
+print(resultados_bathrooms_vs_price$tabla_contingencia)
+
+cat("\nProbabilidades condicionales:\n")
+print(resultados_bathrooms_vs_price$probabilidades_condicionales)
+
+cat("\nProbabilidades marginales de baños:\n")
+print(resultados_bathrooms_vs_price$probabilidades_marginales)
+
+
+
+
+
+```
+
+# 📊 Visualización: Probabilidad de Tipo de Habitación por Barrio
+
+```{r}
+p_room_type_barrio <- visualizar_probabilidad_condicional(
+  data = airbnb_data %>% filter(neighbourhood_cleansed %in% barrios_seleccionados),
+  condicionante = "neighbourhood_cleansed",
+  objetivo = "room_type",
+  titulo = "Probabilidad de Tipo de Habitación por Barrio en Airbnb",
+  xlab = "Barrio",
+  guardar = TRUE,
+  ruta_guardado = here("reportes/Proy_Airbnb/resultados_generados/probabilidad_condicional_room_type_barrio.png")
+)
+
+p_room_type_barrio
+
+```
+
+
+
+# 📊 Visualización: Probabilidad de Precio por Barrio
+
+```{r}
+p_precio_barrio <- visualizar_probabilidad_condicional(
+  data = airbnb_data %>% filter(neighbourhood_cleansed %in% barrios_seleccionados),
+  condicionante = "neighbourhood_cleansed",
+  objetivo = "price",
+  titulo = "Probabilidad de Precio por Barrio en Airbnb",
+  xlab = "Barrio",
+  guardar = TRUE,
+  ruta_guardado = here("reportes/Proy_Airbnb/resultados_generados/probabilidad_condicional_precio_barrio.png"),
+  bins = seq(0, max(airbnb_data$price, na.rm = TRUE), by = 100)
+)
+
+p_precio_barrio
+
+```
+
+
+
+
+
+# 📊 Visualización: Probabilidad de Número de Baños dado el Precio
+
+```{r}
+p_bathrooms_price <- visualizar_probabilidad_condicional(
+  data = airbnb_data_binned,
+  condicionante = "price",
+  objetivo = "bathrooms",
+  titulo = "Probabilidad de Número de Baños dado el Precio en Airbnb",
+  xlab = "Precio (USD)",
+  guardar = TRUE,
+  ruta_guardado = here("reportes/Proy_Airbnb/resultados_generados/probabilidad_condicional_bathrooms_vs_price.png"),
+  bins = bins_price
+)
+
+# Ajustar etiquetas del eje X en plotly
+p_bathrooms_price <- p_bathrooms_price %>% layout(xaxis = list(tickangle = 90))
+
+# Mostrar el gráfico interactivo
+p_bathrooms_price
+
+```
+
+
+
+
+# ✅ Conclusión
+
+Hemos aplicado cálculos de probabilidad condicional para explorar la relación entre precios, número de baños, barrios y tipo de habitación en Airbnb. Estas visualizaciones permiten una mejor interpretación de los datos para decisiones de inversión o análisis de tendencias.
+
+

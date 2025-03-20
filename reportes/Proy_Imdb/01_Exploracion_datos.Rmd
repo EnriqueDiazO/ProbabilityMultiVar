@@ -1,0 +1,129 @@
+---
+title: "Análisis Exploratorio de Datos"
+author: "Enrique Díaz Ocampo"
+date: "`r Sys.Date()`"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
+```
+
+## 1️⃣ **Introducción**
+Este documento presenta un **Análisis Exploratorio de Datos (EDA)** aplicado al dataset **Airbnb Listings.**.
+Se exploran aspectos clave como:
+
+- Carga y preprocesamiento de datos.
+- Identificación de variables cuantitativas y cualitativas.
+- Resumen estadístico y análisis descriptivo.
+- Distribución de variables categóricas.
+- Visualización de datos clave.
+
+El objetivo es **comprender la estructura del dataset y detectar patrones en precios, tipos de alojamientos y disponibilidad** antes de aplicar modelos de análisis avanzados.
+
+---
+
+## 2️⃣ **Carga de Librerías y Configuración**
+```{r}
+install.packages("here",dependencies = TRUE)
+library(here)           # Manejo de rutas dinámicas
+source(here("reportes/Proy_Airbnb/00_CONFIGURACION.r"))
+```
+
+```{r}
+# 📌 Cargar librerías necesarias
+library(janitor)        # Limpieza de nombres de columnas
+library(summarytools)   # Resumen estadístico detallado
+library(ggplot2)        # Gráficos
+library(dplyr)          # Manipulación de datos
+
+# 📌 Cargar configuración global
+theme_set(theme_minimal())
+
+# 📌 Cargar scripts de preprocesamiento
+source(here("scripts/utils.r"))
+source(here("scripts/1_preprocesamiento_esp_dataset.r"))
+```
+
+---
+
+## 3️⃣ **Carga y Preprocesamiento de Datos**
+```{r}
+# 📌 Cargar y preprocesar el dataset
+Imdb_data <- preprocesar_datos(here("datasets/imdb_data_limpio.csv"), "Imdb")
+```
+📌 **¿Qué hace esta función?**
+✔ Limpia los nombres de las columnas.
+✔ Convierte variables categóricas en factores.
+✔ Filtra valores inválidos.
+✔ Retorna un dataset listo para análisis.
+
+---
+
+## 4️⃣ **Identificación de Variables Cuantitativas y Cualitativas**
+
+```{r}
+# 📊 Identificación de Tipos de Variables
+
+variables_cuantitativas <- Imdb_data %>%
+  select(where(is.numeric)) %>%
+  names()
+
+variables_cualitativas <- Imdb_data %>%
+  select(where(~ is.character(.) | is.factor(.))) %>%
+  names()
+
+# Imprimir resultados
+cat("\n📊 **Variables Cuantitativas:**\n", paste(variables_cuantitativas, collapse = ", "), "\n")
+cat("\n📊 **Variables Cualitativas:**\n", paste(variables_cualitativas, collapse = ", "), "\n")
+```
+
+
+---
+
+## 5️⃣ Resumen Estadístico del Dataset
+
+📌 ¿Qué nos dice esto?
+
+✔ Muestra estadísticas generales como media, mediana, mínimos, máximos y percentiles.
+
+✔ Nos ayuda a detectar valores atípicos y datos faltantes.
+
+```{r}
+# Resumen del dataset
+summary(Imdb_data %>% select(-c(names, overview, crew, orig_title)))
+```
+
+## 6️⃣ Análisis Descriptivo Detallado
+
+📌 ¿Por qué usar descr()?
+
+✔ Genera estadísticas más detalladas que summary(), incluyendo frecuencias y desviaciones estándar.
+
+✔ Permite explorar datos de forma más granular para detectar patrones.
+
+```{r}
+descr(Imdb_data) 
+```
+
+## 7️⃣ Distribución de Variables Categóricas
+
+📌 ¿Por qué analizar variables categóricas?
+
+✔ Nos ayuda a entender la frecuencia de distintos tipos de alojamientos, políticas de los anfitriones y distribución de precios por tipo de propiedad.
+
+✔ Es útil para identificar patrones de oferta en Airbnb.
+
+Los resultados se guardarán en la carpeta de resultados_generados para referencia futura.
+
+
+
+```bash
+/Proy_Imdb/resultados_generados/1_categorical_variable_counts.txt
+```
+
+```{r}
+save_categorical_counts(Imdb_data %>% select(-c(names, overview, crew, orig_title)),"Proy_Imdb")
+```

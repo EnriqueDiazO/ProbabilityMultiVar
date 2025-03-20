@@ -1,0 +1,162 @@
+
+------------------------------
+📊 Distribución de valores en: host_response_time 
+[[1]]
+host_response_time
+   within and hour within a few hours       within a day a few days or more 
+                 0               1034                552                276 
+
+
+------------------------------
+📊 Distribución de valores en: host_verifications 
+[[1]]
+host_verifications
+['email', 'phone', 'work_email']               ['email', 'phone'] 
+                            1748                             8534 
+         ['email', 'work_email']                        ['email'] 
+                               1                                3 
+         ['phone', 'work_email']                        ['phone'] 
+                              32                              759 
+                              [] 
+                               3 
+
+
+------------------------------
+📊 Distribución de valores en: neighbourhood_cleansed 
+[[1]]
+neighbourhood_cleansed
+        Álvaro Obregón           Azcapotzalco          Benito Juárez 
+                   390                    123                   1250 
+              Coyoacán  Cuajimalpa de Morelos             Cuauhtémoc 
+                   670                    170                   5459 
+     Gustavo A. Madero              Iztacalco             Iztapalapa 
+                   170                    127                     84 
+La Magdalena Contreras         Miguel Hidalgo             Milpa Alta 
+                    50                   1964                      7 
+               Tláhuac                Tlalpan    Venustiano Carranza 
+                    11                    272                    293 
+            Xochimilco 
+                    40 
+
+
+------------------------------
+📊 Distribución de valores en: property_type 
+[[1]]
+property_type
+                          Campsite                    Casa particular 
+                                 3                                  9 
+                            Castle                       Earthen home 
+                                 1                                  1 
+                   Entire bungalow                       Entire cabin 
+                                 1                                  9 
+                     Entire chalet                       Entire condo 
+                                 1                               1777 
+                    Entire cottage                 Entire guest suite 
+                                 4                                130 
+                 Entire guesthouse                        Entire home 
+                                45                                367 
+                     Entire hostel                        Entire loft 
+                                 1                                827 
+                      Entire place                 Entire rental unit 
+                                12                               4448 
+         Entire serviced apartment                   Entire townhouse 
+                               399                                 29 
+              Entire vacation home                       Entire villa 
+                                13                                  7 
+                      Holiday park                                Hut 
+                                 9                                  4 
+                      Private room               Private room in barn 
+                                12                                  1 
+ Private room in bed and breakfast              Private room in cabin 
+                                96                                  3 
+   Private room in casa particular              Private room in condo 
+                                60                                376 
+           Private room in cottage               Private room in dome 
+                                 1                                  2 
+       Private room in guest suite         Private room in guesthouse 
+                               145                                 82 
+              Private room in home             Private room in hostel 
+                               867                                 42 
+               Private room in hut               Private room in loft 
+                                 2                                 44 
+       Private room in rental unit Private room in serviced apartment 
+                               831                                 71 
+Private room in shipping container          Private room in tiny home 
+                                 2                                 11 
+         Private room in townhouse      Private room in vacation home 
+                                48                                  6 
+             Private room in villa                 Room in aparthotel 
+                                 7                                 25 
+         Room in bed and breakfast             Room in boutique hotel 
+                                 4                                 56 
+           Room in casa particular                      Room in hotel 
+                                 2                                 80 
+        Room in serviced apartment   Shared room in bed and breakfast 
+                                 5                                  8 
+    Shared room in casa particular               Shared room in condo 
+                                 1                                  1 
+         Shared room in guesthouse                Shared room in home 
+                                 2                                  5 
+             Shared room in hostel               Shared room in hotel 
+                                15                                  1 
+          Shared room in townhouse                 Shipping container 
+                                 3                                 39 
+                         Tiny home 
+                                27 
+
+
+------------------------------
+📊 Distribución de valores en: room_type 
+[[1]]
+room_type
+Entire home/apt      Hotel room    Private room     Shared room 
+           8176              22            2846              36 
+
+
+------------------------------
+📊 Distribución de valores en: bathrooms_text 
+[[1]]
+bathrooms_text
+          0 baths    0 shared baths            1 bath    1 private bath 
+               12                13              4775              1252 
+    1 shared bath         1.5 baths  1.5 shared baths          10 baths 
+              857               637               184                 5 
+  10 shared baths        10.5 baths          11 baths 11.5 shared baths 
+                1                 2                 1                 1 
+         12 baths        12.5 baths   13 shared baths          14 baths 
+                2                 2                 1                 1 
+       14.5 baths          15 baths          16 baths           2 baths 
+                1                 1                 1              2125 
+   2 shared baths         2.5 baths  2.5 shared baths          20 baths 
+              104               381                47                 1 
+          3 baths    3 shared baths         3.5 baths  3.5 shared baths 
+              260                31               119                 9 
+          4 baths    4 shared baths         4.5 baths  4.5 shared baths 
+               71                11                43                10 
+         49 baths           5 baths    5 shared baths         5.5 baths 
+                1                20                 2                18 
+          6 baths    6 shared baths         6.5 baths           7 baths 
+               18                 4                 8                 9 
+        7.5 baths           8 baths    8 shared baths         8.5 baths 
+                7                 9                 2                 3 
+          9 baths         Half-bath Private half-bath  Shared half-bath 
+                2                 7                 4                 5 
+
+
+------------------------------
+📊 Distribución de valores en: neighbourhood 
+[[1]]
+neighbourhood
+        Álvaro Obregón           Azcapotzalco          Benito Juárez 
+                   390                    123                   1250 
+              Coyoacán  Cuajimalpa de Morelos             Cuauhtémoc 
+                   670                    170                   5459 
+     Gustavo A. Madero              Iztacalco             Iztapalapa 
+                   170                    127                     84 
+La Magdalena Contreras         Miguel Hidalgo             Milpa Alta 
+                    50                   1964                      7 
+               Tláhuac                Tlalpan    Venustiano Carranza 
+                    11                    272                    293 
+            Xochimilco 
+                    40 
+

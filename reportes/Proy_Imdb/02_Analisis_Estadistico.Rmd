@@ -1,0 +1,266 @@
+---
+title: "Guía de Gráficos para el Análisis Exploratorio de Datos (EDA)"
+author: "Enrique Díaz Ocampo"
+date: "`r Sys.Date()`"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
+```
+
+
+# 1️⃣ Introducción
+
+Esta guía proporciona una serie de gráficos para realizar un Análisis Exploratorio de Datos (EDA) en el dataset IMDb Movies.
+
+Exploraremos los siguientes aspectos:
+
+- Análisis Unidimensional: Distribución de una sola variable.
+
+- Análisis Multivariado: Relación entre dos o más variables.
+
+- Visualización con ggplot2 para identificar patrones en los datos.
+
+Estos gráficos nos ayudarán a entender la distribución de presupuestos, ingresos, géneros, puntuaciones y otros factores clave de las películas.
+
+# 2️⃣ Carga de Librerías y Configuración
+```{r}
+install.packages("here", dependencies = TRUE)
+library(here)           # Manejo de rutas dinámicas
+source(here("reportes/Proy_Imdb/00_CONFIGURACION.r"))
+```
+
+```{r}
+# 📌 Cargar librerías necesarias
+library(janitor)        # Limpieza de nombres de columnas
+library(summarytools)   # Resumen estadístico detallado
+library(ggplot2)        # Gráficos
+library(dplyr)          # Manipulación de datos
+library(plotly)         # Gráficos Interactivos
+library(htmlwidgets)
+library(here)
+# 📌 Configuración de gráficos globales
+theme_set(theme_minimal())
+
+# 📌 Cargar scripts de preprocesamiento y análisis
+source(here("scripts/utils.r"))
+source(here("scripts/1_preprocesamiento_esp_dataset.r"))
+source(here("scripts/2_analisis_gráfico.r"))
+```
+
+
+# 3️⃣ Carga y Preprocesamiento de Datos
+
+📌 ¿Qué hace esta función?
+
+✔ Limpia los nombres de las columnas.
+
+✔ Convierte variables categóricas en factores.
+
+✔ Filtra valores inválidos.
+
+✔ Retorna un dataset listo para análisis.
+
+```{r}
+# 📌 Cargar y preprocesar el dataset
+Imdb_data <- preprocesar_datos(here("datasets/imdb_data_limpio.csv"), "Imdb")
+```
+
+# 4️⃣ Análisis Unidimensional
+
+El análisis unidimensional permite estudiar la distribución de una sola variable.
+
+## 📌 Boxplot para una variable cuantitativa (Presupuesto)
+
+```{r}
+filtered_genres <- Imdb_data %>%
+  group_by(genre) %>%
+  filter(n() > 50) %>%
+  ungroup()
+
+p_boxplot_budget <- crear_boxplot(
+  data = filtered_genres,
+  y = "budget_x",
+  title = "Distribución de Presupuestos en IMDb",
+  xlab = "Películas",
+  ylab = "Presupuesto (USD)",
+  fill = NULL,
+  colores = "blue"
+) +
+  scale_y_log10()  # Aplicar escala logarítmica al eje Y
+
+# Guardar y mostrar el gráfico
+guardar_grafico(p_boxplot_budget, here("reportes/Proy_Imdb/resultados_generados/boxplot_budget.png"))
+convertir_interactivo(p_boxplot_budget)
+
+
+```
+
+
+## 📌 Histograma para una variable cuantitativa (Puntuación de Películas)
+
+```{r}
+filtered_genres <-  Imdb_data %>%
+  group_by(genre) %>%
+  filter(n() > 50) %>%
+  ungroup()
+
+p_histograma_score <- crear_histograma(
+  data = filtered_genres,
+  x = "score",
+  title = "Distribución de Puntuaciones de Películas en IMDb",
+  xlab = "Puntuación IMDb",
+  ylab = "Frecuencia",
+  binwidth = 1,
+  colores = "lightblue",
+  densidad = TRUE
+)
+
+# Guardar el gráfico
+guardar_grafico(p_histograma_score, here("reportes/Proy_Imdb/resultados_generados/histograma_score.png"))
+
+# Convertir a gráfico interactivo
+convertir_interactivo(p_histograma_score)
+
+
+
+```
+
+# 5️⃣ Análisis de Géneros de Películas
+
+📌 Barplot de Frecuencia de Géneros
+
+```{r}
+# Filtrar géneros con más de 50 películas
+filtered_genres <-  Imdb_data %>%
+  group_by(genre) %>%
+  filter(n() > 50) %>%
+  ungroup()
+
+# Crear el gráfico de barras solo con los géneros filtrados
+p_barplot_genre <- crear_barplot(
+  data = filtered_genres,
+  x = "genre",
+  fill = "genre",
+  title = "Distribución de Géneros de Películas",
+  xlab = "Género",
+  ylab = "Frecuencia",
+  dodge = FALSE,
+  voltear = TRUE,
+  legend_position = "none"
+)
+
+# Guardar el gráfico
+guardar_grafico(p_barplot_genre, here("reportes/Proy_Imdb/resultados_generados/barplot_genre_filtered.png"))
+
+# Convertir a gráfico interactivo
+convertir_interactivo(p_barplot_genre)
+
+
+```
+
+
+
+
+# 6️⃣ Análisis Multivariado
+
+📌 Relación entre Presupuesto y Recaudación de Películas
+
+
+```{r}
+# Filtrar géneros con más de 50 películas
+filtered_genres <- Imdb_data %>%
+  group_by(genre) %>%
+  filter(n() > 50) %>%
+  ungroup()
+
+# Filtrar valores de presupuesto y recaudación para que sean positivos
+filtered_movies <- filtered_genres %>%
+  filter(budget_x > 0, revenue > 0)  # ✅ Eliminar valores cero o negativos
+
+# Crear el gráfico de dispersión con escala logarítmica
+p_scatter_budget_revenue <- crear_scatterplot(
+  data = filtered_movies,
+  x = "budget_x",
+  y = "revenue",
+  title = "Relación entre Presupuesto y Recaudación de Películas",
+  xlab = "Presupuesto (USD)",
+  ylab = "Recaudación (USD)",
+  color = NULL,
+  colores = "steelblue"
+) +
+  scale_x_log10() +  # ✅ Aplicar escala logarítmica solo después de filtrar
+  scale_y_log10() +
+  theme(
+    plot.title = element_text(hjust = 0.5, size = 16, face = "bold"),
+    axis.text = element_text(size = 12),
+    axis.title = element_text(size = 14, face = "bold")
+  )
+
+# Guardar el gráfico
+guardar_grafico(p_scatter_budget_revenue, here("reportes/Proy_Imdb/resultados_generados/scatter_budget_revenue.png"))
+
+# Convertir a gráfico interactivo
+convertir_interactivo(p_scatter_budget_revenue )
+
+
+
+```
+
+## 📌 Boxplot de Puntuaciones por Género
+
+```{r}
+# Filtrar géneros con más de 50 películas
+filtered_genres <-  Imdb_data %>%
+  group_by(genre) %>%
+  filter(n() > 50) %>%
+  ungroup()
+
+
+p_boxplot_score_genre <- crear_boxplot(
+  data = filtered_genres,
+  x = "genre",
+  y = "score",
+  fill = "genre",
+  title = "Distribución de Puntuaciones por Género en IMDb",
+  xlab = "Género",
+  ylab = "Puntuación IMDb",
+  fill_lab = "Género",
+  colores = NULL,
+  rotar_x = TRUE
+) +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1, size = 10), legend.position = "none")
+
+# Guardar el gráfico
+guardar_grafico(p_boxplot_score_genre, here("reportes/Proy_Imdb/resultados_generados/boxplot_score_genre.png"))
+
+# Convertir a gráfico interactivo
+convertir_interactivo(p_boxplot_score_genre)
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
